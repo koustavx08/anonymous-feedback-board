@@ -11,18 +11,27 @@ Built for the Midnight Builder Challenge. Project idea #8 (*Anonymous Feedback B
 
 ## Contract Address
 
-Deployment is a manual step (see [Manual Deployment](#manual-deployment)).
+| Network | Status | Address |
+| ------- | ------ | ------- |
+| Preprod | 🟡 **Pending deployment** | `<YOUR_DEPLOYED_CONTRACT_ADDRESS>` |
 
-| Network | Contract Address                     |
-| ------- | ------------------------------------ |
-| Preprod | `<YOUR_DEPLOYED_CONTRACT_ADDRESS>`   |
+The contract is written and the whole stack is wired to it, but it has not been deployed yet — the build
+machine had no Docker and no WSL distro, so the Compact compiler and proof server could not run. See
+[Build & toolchain status](#build--toolchain-status) for exactly what was and wasn't verified.
+
+Deploying is a single command once the toolchain is in place — see
+[Manual Deployment](#manual-deployment). The address it prints replaces the placeholder in two files:
 
 ```env
+# ui/.env
+VITE_CONTRACT_ADDRESS=<YOUR_DEPLOYED_CONTRACT_ADDRESS>
+
+# shell environment, used by feedback-cli
 CONTRACT_ADDRESS=<YOUR_DEPLOYED_CONTRACT_ADDRESS>
 ```
 
-**Status: Pending** — not yet deployed. See [Build & toolchain status](#build--toolchain-status) for exactly
-what was and wasn't verified on the build machine.
+> The placeholder is intentional. It is left in rather than filled with a plausible-looking value so that
+> nothing in this repo claims a deployment that does not exist on-chain.
 
 ## Live Demo
 
