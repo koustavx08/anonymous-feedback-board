@@ -1,0 +1,140 @@
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Anonymous Feedback Board
+//
+//  A feedback round that anyone can contribute to exactly once, without ever
+//  revealing who they are.
+//
+//  PUBLIC (on the ledger, visible to everyone):
+//    - the feedback text and star rating of every entry
+//    - how many entries exist
+//    - whether the round is open or closed
+//    - one opaque nullifier per submission
+//
+//  PRIVATE (never leaves the user's machine):
+//    - the user's secret key (`localSecretKey` witness)
+//
+//  WHAT A USER PROVES WITHOUT REVEALING IT:
+//    "I know a secret key that has not yet been used to submit feedback in
+//     this round." The proof convinces the network that the submission is
+//     unique per person, while the secret key itself stays private. The
+//     nullifier published on-chain is a one-way hash of (secret key, round),
+//     so it is unlinkable to the user's identity and unlinkable across rounds.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export enum RoundState { open, closed }
+
+// ── Public ledger state ──────────────────────────────────────────────────────
+
+/// Whether the board is currently accepting feedback.
+export ledger roundState: RoundState;
+
+/// Commitment to the organizer's secret key. Only someone who can reproduce
+/// this value (i.e. knows the secret behind it) may close or reopen the round.
+export ledger organizer: Bytes<32>;
+
+/// Which feedback round we are on. Bumping this retires every existing
+/// nullifier, so past participants may submit again in the new round.
+export ledger round: Counter;
+
+/// Number of entries submitted in the lifetime of the board. Doubles as the
+/// id of the next entry.
+export ledger entryCount: Counter;
+
+/// Nullifiers of everyone who has already submitted in the current round.
+/// Publishing these enforces one-submission-per-person WITHOUT revealing who.
+export ledger submitted: Set<Bytes<32>>;
+
+/// entry id -> star rating (1..5), publicly readable.
+export ledger ratings: Map<Uint<64>, Uint<8>>;
+
+/// entry id -> feedback text, publicly readable.
+export ledger messages: Map<Uint<64>, Opaque<"string">>;
+
+/// entry id -> the round the entry was submitted in.
+export ledger entryRound: Map<Uint<64>, Uint<64>>;
+
+// ── Private state ────────────────────────────────────────────────────────────
+
+/// The caller's secret key. Supplied locally by the witness implementation in
+/// `witnesses.ts` and never included in the transaction.
+witness localSecretKey(): Bytes<32>;
+
+// ── Derivations ──────────────────────────────────────────────────────────────
+
+/// A stable, public identity commitment derived from a secret key.
+/// Domain-separated so it cannot collide with the nullifier below.
+export circuit publicKey(sk: Bytes<32>, domain: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "feedback:pk:"), domain, sk]);
+}
+
+/// The per-round nullifier for a secret key. Deterministic for a given
+/// (key, round) pair — which is what makes double-submission detectable —
+/// but reveals nothing about the key itself.
+export circuit nullifier(sk: Bytes<32>, roundId: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "feedback:nul:"), roundId, sk]);
+}
+
+// ── Constructor ──────────────────────────────────────────────────────────────
+
+/// The account that deploys the board becomes its organizer. We commit to the
+/// deployer's secret key rather than storing it, so the organizer stays
+/// pseudonymous while still being able to prove control later.
+constructor() {
+  roundState = RoundState.open;
+  organizer = disclose(publicKey(localSecretKey(), pad(32, "organizer")));
+  round.increment(1);
+}
+
+// ── Circuits ─────────────────────────────────────────────────────────────────
+
+/// Submit one piece of feedback to the open round.
+///
+/// The rating and message are deliberately disclosed — the whole point of the
+/// board is that the feedback itself is public. The author is not: only the
+/// nullifier is published, and it is a one-way function of a secret that never
+/// leaves the browser.
+export circuit submitFeedback(rating: Uint<8>, message: Opaque<"string">): [] {
+  assert(roundState == RoundState.open, "Feedback round is closed");
+  assert(rating >= 1, "Rating must be at least 1");
+  assert(rating <= 5, "Rating must be at most 5");
+
+  const roundId = round as Field as Bytes<32>;
+  const nul = disclose(nullifier(localSecretKey(), roundId));
+
+  assert(!submitted.member(nul), "This key has already submitted feedback in the current round");
+  submitted.insert(nul);
+
+  const id = entryCount as Field as Uint<64>;
+  ratings.insert(id, disclose(rating));
+  messages.insert(id, disclose(message));
+  entryRound.insert(id, round as Field as Uint<64>);
+
+  entryCount.increment(1);
+}
+
+/// Close the round so no further feedback is accepted. Organizer only.
+export circuit closeRound(): [] {
+  assert(roundState == RoundState.open, "Round is already closed");
+  assert(
+    organizer == publicKey(localSecretKey(), pad(32, "organizer")),
+    "Only the organizer may close the round"
+  );
+  roundState = RoundState.closed;
+}
+
+/// Open a fresh round. Every nullifier from the previous round is retired, so
+/// previous participants may submit again — but still only once. Organizer only.
+export circuit openRound(): [] {
+  assert(roundState == RoundState.closed, "Round is already open");
+  assert(
+    organizer == publicKey(localSecretKey(), pad(32, "organizer")),
+    "Only the organizer may open a new round"
+  );
+  submitted.resetToDefault();
+  round.increment(1);
+  roundState = RoundState.open;
+}
