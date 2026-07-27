@@ -1,0 +1,26 @@
+node_modules/
+dist/
+build/
+.vercel/
+.turbo/
+
+# Compact compiler output — regenerate with `npm run compact`
+contract/src/managed/
+
+# Midnight local state
+.midnight-state.json
+.midnight-wallet-state/
+*.log
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

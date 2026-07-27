@@ -1,0 +1,36 @@
+{
+  "name": "anonymous-feedback-board",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A privacy-preserving anonymous feedback board built on the Midnight Network",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "contract",
+    "api",
+    "feedback-cli",
+    "ui"
+  ],
+  "scripts": {
+    "compact": "npm run compact --workspace contract",
+    "build": "npm run build --workspace contract && npm run build --workspace api && npm run build --workspace ui",
+    "build:ui": "npm run build --workspace ui",
+    "dev": "npm run dev --workspace ui",
+    "cli": "npm run start --workspace feedback-cli",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "proof-server:start": "docker run -d --name feedback-proof-server -p 6300:6300 -e PORT=6300 midnightntwrk/proof-server:8.1.0",
+    "proof-server:stop": "docker rm -f feedback-proof-server",
+    "deploy": "npm run deploy --workspace feedback-cli"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "keywords": [
+    "midnight",
+    "zero-knowledge",
+    "privacy",
+    "compact",
+    "dapp",
+    "feedback"
+  ]
+}

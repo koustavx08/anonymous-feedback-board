@@ -1,0 +1,18 @@
+# Proof server for the Anonymous Feedback Board.
+#
+# Every circuit call (submitFeedback / closeRound / openRound) is proved here
+# before it is submitted to the network. Nothing in the private state ever
+# reaches the chain — the proof server turns it into a zero-knowledge proof
+# locally, on your machine.
+#
+#   docker compose up -d      # start
+#   docker compose down       # stop
+services:
+  proof-server:
+    image: midnightntwrk/proof-server:8.1.0
+    container_name: feedback-proof-server
+    ports:
+      - "6300:6300"
+    environment:
+      PORT: 6300
+    restart: unless-stopped
