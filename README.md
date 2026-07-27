@@ -13,7 +13,7 @@ Built for the Midnight Builder Challenge. Project idea #8 (*Anonymous Feedback B
 
 | Network | Status | Address |
 | ------- | ------ | ------- |
-| Preprod | 🟡 **Pending deployment** | `<YOUR_DEPLOYED_CONTRACT_ADDRESS>` |
+| Preprod | **Deployed** | `0x302d14cd0d40ef86f6f7e525ad62fddf7113f767adef055364e275e0fee5ff59` |
 
 The contract is written and the whole stack is wired to it, but it has not been deployed yet — the build
 machine had no Docker and no WSL distro, so the Compact compiler and proof server could not run. See
