@@ -249,26 +249,62 @@ Set `VITE_CONTRACT_ADDRESS` and `VITE_NETWORK_ID` in the Vercel project's enviro
 
 ## Build & toolchain status
 
-Honest account of what was verified on the machine this was built on (Windows 11, no Docker, no WSL distro):
+Honest account of what has and hasn't been verified.
 
 | Step | Status |
 | --- | --- |
 | `ui` — `tsc --noEmit` | ✅ passes |
 | `ui` — `vite build` | ✅ passes (158 kB bundle) |
 | UI running end-to-end in a browser | ✅ verified — screenshots above are of the running app |
-| `npm run compact` | ⚠️ **not run** — the Compact compiler is Linux/macOS-only and no WSL distro was available |
-| `contract` / `api` / `feedback-cli` builds | ⚠️ **not run** — they import `contract/src/managed/`, which only exists after `npm run compact` |
+| **`npm run compact`** | ✅ **passes** — compiles all 3 circuits, no errors |
+| `contract` / `api` / `feedback-cli` builds | ⚠️ **not run** — `npm install` for the Midnight SDK packages has not been completed on this machine |
 | Contract deployment | ⚠️ **not run** — needs the proof server (Docker) and a funded wallet |
 
-The contract and the TypeScript integration layer are written against the current Midnight stack
-(Compact 0.23, Midnight.js 4.1.1) and follow the official `example-bboard` scaffold's patterns closely, but
-**`feedback.compact` has not been through the compiler.** Expect to fix small syntax issues on your first
-`npm run compact`.
+### Verified toolchain
+
+Compilation was verified inside WSL 2 (Ubuntu 24.04), since the Compact compiler is Linux/macOS-only:
+
+| Component | Version |
+| --- | --- |
+| Compact developer tools | `0.5.1` |
+| Compact compiler | `0.31.1` (`x86_64-unknown-linux-musl`) |
+| Node | `v22.23.1` |
+| Language pragma | `language_version >= 0.23` |
+
+`compact compile src/feedback.compact ./src/managed/feedback` reports **`Compiling 3 circuits`** and emits
+prover/verifier keys plus ZKIR for `submitFeedback`, `closeRound` and `openRound`:
+
+```
+src/managed/feedback/
+├── compiler/contract-info.json
+├── contract/index.{js,d.ts}
+├── keys/{submitFeedback,closeRound,openRound}.{prover,verifier}
+└── zkir/{submitFeedback,closeRound,openRound}.{zkir,bzkir}
+```
+
+These artifacts are build output and are gitignored — run `npm run compact` to regenerate them.
 
 ## Troubleshooting
 
-**`compact: command not found`** — the compiler isn't on your PATH. Follow the install steps in the Midnight
-docs and re-check with `compact --version`. On Windows, run it inside WSL2.
+**`compact: command not found`** — the compiler isn't on your PATH. The installer places the driver in
+`$HOME/.local/bin`, so add `export PATH="$HOME/.local/bin:$PATH"` to your shell profile and re-check with
+`compact --version`. On Windows, run it inside WSL2.
+
+**`compact update` fails with "Failed to spawn artifact extraction command"** — a minimal Ubuntu/WSL rootfs
+is missing the archive tools the updater shells out to. Install them and retry:
+
+```bash
+sudo apt-get install -y unzip zstd tar xz-utils
+```
+
+**`Wsl/Service/CreateInstance/HCS_E_CONNECTION_TIMEOUT`** — WSL couldn't start its VM, almost always because
+the host is out of free RAM. Close memory-heavy apps (browsers especially) and cap WSL in `%USERPROFILE%\.wslconfig`:
+
+```ini
+[wsl2]
+memory=3GB
+processors=2
+```
 
 **`Cannot find module './managed/feedback/contract/index.js'`** — you haven't compiled yet. Run
 `npm run compact`.

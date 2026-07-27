@@ -132,7 +132,9 @@ export class FeedbackBoardAPI implements DeployedFeedbackAPI {
 
     this.logger?.info({ submitFeedback: { rating: validRating } });
 
-    const txData = await this.deployedContract.callTx.submitFeedback(validRating, validMessage);
+    // The compiled circuit takes `Uint<8>` as a bigint; the public API keeps
+    // `number` because that is what the UI and CLI naturally produce.
+    const txData = await this.deployedContract.callTx.submitFeedback(BigInt(validRating), validMessage);
 
     this.logger?.trace({
       transactionAdded: {
