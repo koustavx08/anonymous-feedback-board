@@ -24,3 +24,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Claude Code per-machine settings (shared config belongs in .claude/settings.json)
+.claude/settings.local.json
