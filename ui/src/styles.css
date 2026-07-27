@@ -73,6 +73,9 @@ a {
   display: flex;
   gap: 16px;
   align-items: flex-start;
+  /* Without this, the tagline's max-width becomes a min-width for the flex
+     item and pushes the whole page wider than a phone viewport. */
+  min-width: 0;
 }
 
 .header__mark {
@@ -618,4 +621,51 @@ h1 {
   border-top: 1px solid var(--line);
   font-size: 13px;
   color: var(--text-faint);
+}
+
+/* ── Small screens ──────────────────────────────────────── */
+
+@media (max-width: 560px) {
+  .app {
+    padding: 22px 14px 44px;
+  }
+
+  h1 {
+    font-size: 21px;
+  }
+
+  .header__tagline {
+    max-width: none;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .stat {
+    padding: 13px 14px;
+  }
+
+  .stat__value {
+    font-size: 20px;
+  }
+
+  .card {
+    padding: 18px 16px;
+  }
+
+  .header__wallet,
+  .header__wallet .btn {
+    width: 100%;
+  }
+
+  .composer__footer .btn {
+    width: 100%;
+  }
+
+  .entry__head {
+    flex-direction: column;
+    gap: 4px;
+  }
 }
