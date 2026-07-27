@@ -29,7 +29,7 @@ what was and wasn't verified on the build machine.
 | | |
 | --- | --- |
 | **Live app** | `<YOUR_VERCEL_URL>` — *pending deploy, see [Deploying the UI](#deploying-the-ui-to-vercel)* |
-| **Repository** | `<YOUR_GITHUB_REPO_URL>` |
+| **Repository** | https://github.com/koustavx08/anonymous-feedback-board |
 
 ---
 
@@ -134,7 +134,7 @@ organizer stays pseudonymous while still being the only one who can close a roun
 ## Installation
 
 ```bash
-git clone <YOUR_GITHUB_REPO_URL>
+git clone https://github.com/koustavx08/anonymous-feedback-board.git
 cd anonymous-feedback-board
 npm install
 ```
