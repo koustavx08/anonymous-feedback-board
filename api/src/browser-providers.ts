@@ -30,6 +30,39 @@ export type BrowserProviderOptions = {
   readonly proofServer: string;
   /** Where the compiled ZK keys are served from. Defaults to the page origin. */
   readonly zkConfigPath?: string;
+  /**
+   * Passphrase encrypting the local private-state store. Must be at least 16
+   * characters. If omitted, a random one is generated once and kept in
+   * localStorage for this origin — clearing site data resets your identity.
+   */
+  readonly privateStatePassword?: string;
+};
+
+const PASSWORD_STORAGE_KEY = 'feedback-board:private-state-password';
+
+/**
+ * The private-state store is encrypted at rest. There is no server to hold a
+ * passphrase for a browser dApp, so we generate one per origin and persist it
+ * alongside the store it protects. That guards against casual inspection, not
+ * against someone who already has read access to this browser profile.
+ */
+const resolvePrivateStatePassword = (supplied?: string): string => {
+  if (supplied) {
+    if (supplied.length < 16) {
+      throw new Error('privateStatePassword must be at least 16 characters');
+    }
+    return supplied;
+  }
+
+  const store = globalThis.localStorage;
+  const existing = store?.getItem(PASSWORD_STORAGE_KEY);
+  if (existing) return existing;
+
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  const generated = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  store?.setItem(PASSWORD_STORAGE_KEY, generated);
+  return generated;
 };
 
 type ConnectedWalletAPI = {
@@ -89,6 +122,10 @@ export const buildBrowserProviders = async (options: BrowserProviderOptions): Pr
   return {
     privateStateProvider: levelPrivateStateProvider({
       privateStateStoreName: 'feedback-board-private-state',
+      // Scope the store to the connected wallet so switching accounts doesn't
+      // silently reuse the previous account's secret key.
+      accountId: shieldedAddresses.shieldedCoinPublicKey,
+      privateStoragePasswordProvider: () => resolvePrivateStatePassword(options.privateStatePassword),
     }),
     zkConfigProvider,
     proofProvider: httpClientProofProvider(config.proverServerUri ?? options.proofServer, zkConfigProvider),

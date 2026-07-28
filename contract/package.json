@@ -14,7 +14,8 @@
   },
   "scripts": {
     "compact": "compact compile src/feedback.compact ./src/managed/feedback",
-    "build": "tsc --project tsconfig.json",
+    "build": "tsc --project tsconfig.json && npm run copy:managed",
+    "copy:managed": "node -e \"const fs=require('fs');if(!fs.existsSync('src/managed')){console.error('src/managed missing - run npm run compact first');process.exit(1)}fs.cpSync('src/managed','dist/managed',{recursive:true});fs.copyFileSync('src/feedback.compact','dist/feedback.compact')\"",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
   },
