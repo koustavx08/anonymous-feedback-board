@@ -9,6 +9,7 @@
     "build": "tsc --project tsconfig.json",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "start": "tsx src/index.ts",
+    "address": "tsx src/address.ts",
     "deploy": "tsx src/deploy.ts",
     "preprod-remote": "tsx src/index.ts --network preprod"
   },
