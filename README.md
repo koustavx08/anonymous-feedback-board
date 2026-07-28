@@ -44,9 +44,9 @@ CONTRACT_ADDRESS=<YOUR_DEPLOYED_CONTRACT_ADDRESS>
 
 | | |
 | --- | --- |
-| **Live app** | `<YOUR_VERCEL_URL>` |
-| **Video demo** | https://drive.google.com/file/d/1KRuATu2bmWY8VIO7owsKRn7CSPOmsfrI/view?usp=sharing |
-| **Repository** | https://github.com/koustavx08/anonymous-feedback-board |
+| **Live app** | `https://anonymous-feedback-board-ui.vercel.app/` |
+| **Video demo** | `https://drive.google.com/file/d/1KRuATu2bmWY8VIO7owsKRn7CSPOmsfrI/view?usp=sharing` |
+| **Repository** | `https://github.com/koustavx08/anonymous-feedback-board` |
 
 The hosted app runs the contract's rules **in the browser** — real nullifier derivation via Web Crypto, so
 one-submission-per-round is genuinely enforced — and labels that mode in the UI. It cannot prove on-chain,
