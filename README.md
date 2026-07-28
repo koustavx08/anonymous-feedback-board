@@ -13,14 +13,21 @@ Built for the Midnight Builder Challenge. Project idea #8 (*Anonymous Feedback B
 
 | Network | Status | Address |
 | ------- | ------ | ------- |
-| Preprod | **Deployed** | `0x302d14cd0d40ef86f6f7e525ad62fddf7113f767adef055364e275e0fee5ff59` |
+| Preprod | 🟡 **Not deployed** | `<YOUR_DEPLOYED_CONTRACT_ADDRESS>` |
 
-The contract is written and the whole stack is wired to it, but it has not been deployed yet — the build
-machine had no Docker and no WSL distro, so the Compact compiler and proof server could not run. See
-[Build & toolchain status](#build--toolchain-status) for exactly what was and wasn't verified.
+The contract itself is finished and verified — it **compiles** with Compact 0.31.1 and its circuits **pass
+19/19 logic checks** locally (see [Build & toolchain status](#build--toolchain-status)). What is missing is
+only the on-chain submission, for two infrastructure reasons:
 
-Deploying is a single command once the toolchain is in place — see
-[Manual Deployment](#manual-deployment). The address it prints replaces the placeholder in two files:
+- **Preprod.** A fresh wallet must scan ~1.34 million ledger indices before it reports as synced. Measured on
+  this machine, that projected to **several days**, so the deploy never reached the submission step. Using a
+  dedicated indexer endpoint did not help — the bottleneck is the client-side scan, not the network.
+- **Local devnet.** The `undeployed` network sidesteps that entirely (empty chain, pre-funded genesis wallet,
+  sync in seconds), but bringing it up needs Docker, and both container runtimes on the build machine were
+  unavailable at the time.
+
+Once either is available, deployment is a single command — see [Manual Deployment](#manual-deployment) — and
+the address it prints replaces the placeholder in two files:
 
 ```env
 # ui/.env
@@ -30,7 +37,7 @@ VITE_CONTRACT_ADDRESS=<YOUR_DEPLOYED_CONTRACT_ADDRESS>
 CONTRACT_ADDRESS=<YOUR_DEPLOYED_CONTRACT_ADDRESS>
 ```
 
-> The placeholder is intentional. It is left in rather than filled with a plausible-looking value so that
+> The placeholder is intentional. It is left in rather than filled with a plausible-looking value, so that
 > nothing in this repo claims a deployment that does not exist on-chain.
 
 ## Live Demo
