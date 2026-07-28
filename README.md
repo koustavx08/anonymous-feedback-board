@@ -257,8 +257,10 @@ Honest account of what has and hasn't been verified.
 | `ui` — `vite build` | ✅ passes (158 kB bundle) |
 | UI running end-to-end in a browser | ✅ verified — screenshots above are of the running app |
 | **`npm run compact`** | ✅ **passes** — compiles all 3 circuits, no errors |
-| `contract` / `api` / `feedback-cli` builds | ⚠️ **not run** — `npm install` for the Midnight SDK packages has not been completed on this machine |
-| Contract deployment | ⚠️ **not run** — needs the proof server (Docker) and a funded wallet |
+| **`npm run build`** (contract → api → ui) | ✅ **passes** end to end |
+| `feedback-cli` — `tsc` | ✅ passes |
+| Proof server on `:6300` | ✅ responds `{"status":"ok"}` |
+| Contract deployment | ⚠️ **not run** — needs a faucet-funded wallet |
 
 ### Verified toolchain
 
