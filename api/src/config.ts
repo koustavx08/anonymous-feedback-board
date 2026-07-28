@@ -50,6 +50,53 @@ export const isNetworkId = (v: unknown): v is NetworkId =>
   typeof v === 'string' && (NETWORK_IDS as readonly string[]).includes(v);
 
 /**
+ * Environment overrides for the endpoints above.
+ *
+ * The public Midnight endpoints are rate-limited and can be slow to sync. Point
+ * these at a hosted indexer/node provider (Blockfrost, for example) to speed
+ * that up.
+ *
+ * Provider URLs usually embed an API key, so keep them in `.env` — which is
+ * gitignored — and never commit them.
+ *
+ *   MIDNIGHT_INDEXER_URL=https://<host>/api/v0?project_id=<key>
+ *   MIDNIGHT_INDEXER_WS_URL=wss://<host>/api/v0/ws?project_id=<key>
+ *   MIDNIGHT_NODE_URL=https://rpc.<host>?project_id=<key>
+ *   MIDNIGHT_PROOF_SERVER_URL=http://127.0.0.1:6300
+ */
+const ENV_OVERRIDES: ReadonlyArray<readonly [keyof NetworkConfig, string]> = [
+  ['indexer', 'MIDNIGHT_INDEXER_URL'],
+  ['indexerWS', 'MIDNIGHT_INDEXER_WS_URL'],
+  ['node', 'MIDNIGHT_NODE_URL'],
+  ['proofServer', 'MIDNIGHT_PROOF_SERVER_URL'],
+  ['faucet', 'MIDNIGHT_FAUCET_URL'],
+];
+
+/** Read the environment in a way that also works in the browser bundle. */
+const readEnv = (name: string): string | undefined => {
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+  return env?.[name]?.trim() || undefined;
+};
+
+/**
+ * Network config for `network`, with any environment overrides applied.
+ * Prefer this over indexing {@link NETWORK_CONFIGS} directly.
+ */
+export const resolveNetworkConfig = (network: NetworkId): NetworkConfig => {
+  const base = NETWORK_CONFIGS[network];
+  const resolved: Record<string, unknown> = { ...base };
+  for (const [field, varName] of ENV_OVERRIDES) {
+    const value = readEnv(varName);
+    if (value) resolved[field] = value;
+  }
+  return resolved as unknown as NetworkConfig;
+};
+
+/** Which endpoints were overridden, for logging without leaking key material. */
+export const describeOverrides = (): string[] =>
+  ENV_OVERRIDES.filter(([, varName]) => readEnv(varName) !== undefined).map(([field]) => String(field));
+
+/**
  * Address of the deployed feedback board.
  *
  * Left as a placeholder on purpose — deployment is a manual step (see the

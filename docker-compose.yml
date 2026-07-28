@@ -1,18 +1,92 @@
-# Proof server for the Anonymous Feedback Board.
+# Local Midnight devnet for the Anonymous Feedback Board.
 #
-# Every circuit call (submitFeedback / closeRound / openRound) is proved here
-# before it is submitted to the network. Nothing in the private state ever
-# reaches the chain — the proof server turns it into a zero-knowledge proof
-# locally, on your machine.
+# LOCAL DEVELOPMENT ONLY — do not expose these ports to a public network.
 #
-#   docker compose up -d      # start
-#   docker compose down       # stop
+#   docker compose up -d --wait     # start node + indexer + proof server
+#   docker compose down -v          # tear down, including volumes
+#
+# With this running you can deploy against the `undeployed` network, which
+# starts from an empty chain and a pre-funded genesis wallet — so it syncs in
+# seconds rather than the days a fresh wallet needs on preprod.
+#
+# If you only want to prove against a public network, you need just the
+# proof-server service: `docker compose up -d proof-server`.
+name: feedback-board-devnet
+
 services:
+  node:
+    image: midnightntwrk/midnight-node:1.0.0
+    container_name: feedback-board-node
+    ports:
+      - "9944:9944"
+    environment:
+      CFG_PRESET: "dev"
+      SIDECHAIN_BLOCK_BENEFICIARY: "04bcf7ad3be7a5c790460be82a713af570f22e0f801f6659ab8e84a52be6969e"
+    # Healthy means "producing blocks", not merely "port open": the probe asks
+    # for the hash of block 1 and fails until it exists. indexer-standalone
+    # exits 1 if it connects while the chain is still at genesis, and
+    # `up --wait` fails the moment a container dies — so the indexer must not
+    # start until block 1 exists (see depends_on below).
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -sf -H 'Content-Type: application/json' -d '{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"chain_getBlockHash\",\"params\":[1]}' http://localhost:9944 | grep -q '\"result\":\"0x'",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 45
+      start_period: 20s
+
+  indexer:
+    # indexer-standalone 4.3.x bundles an SPO indexer whose config hard-requires
+    # a Blockfrost API key at boot and exits 1 without it. A dummy value
+    # satisfies the config loader on a local devnet, so no real credential is
+    # needed here. Do NOT bump to 4.3.4/4.4.0 — those are pre-alpha builds for
+    # the future ledger-9/node-2 line, not stable releases.
+    image: midnightntwrk/indexer-standalone:4.3.3
+    container_name: feedback-board-indexer
+    restart: on-failure
+    ports:
+      - "8088:8088"
+    environment:
+      RUST_LOG: "indexer=info,chain_indexer=info,indexer_api=info,wallet_indexer=info,indexer_common=info,fastrace_opentelemetry=off,info"
+      APP__APPLICATION__NETWORK_ID: "undeployed"
+      APP__INFRA__NODE__URL: "ws://node:9944"
+      APP__INFRA__STORAGE__PASSWORD: "indexer"
+      APP__INFRA__PUB_SUB__PASSWORD: "indexer"
+      APP__INFRA__LEDGER_STATE_STORAGE__PASSWORD: "indexer"
+      APP__INFRA__SECRET: "303132333435363738393031323334353637383930313233343536373839303132"
+      APP__INFRA__SPO_NODE__URL: "ws://node:9944"
+      APP__INFRA__SPO_NODE__BLOCKFROST_ID: "local-devnet-dummy-id"
+    healthcheck:
+      test: ["CMD-SHELL", "cat /var/run/indexer-standalone/running"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    depends_on:
+      node:
+        condition: service_healthy
+
   proof-server:
+    # Pinned to 8.1.0 to match the ledger-v8 8.1.0 that Midnight.js 4.1.1 pins
+    # client-side. Do not drop into the 7.x line (hangs in proof generation on
+    # Apple Silicon) and avoid 9.0.0-rc.x pre-releases.
+    #
+    # The image is distroless: /bin/sh exists but is not on PATH and there is
+    # no curl. The healthcheck works because CMD-SHELL invokes /bin/sh directly
+    # and probes with the shell-builtin /dev/tcp redirect.
     image: midnightntwrk/proof-server:8.1.0
-    container_name: feedback-proof-server
+    container_name: feedback-board-proof-server
+    command: ["midnight-proof-server -v"]
     ports:
       - "6300:6300"
     environment:
-      PORT: 6300
-    restart: unless-stopped
+      RUST_BACKTRACE: "full"
+    healthcheck:
+      test: ["CMD-SHELL", "echo > /dev/tcp/127.0.0.1/6300"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 10s

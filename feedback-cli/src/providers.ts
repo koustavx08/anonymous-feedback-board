@@ -29,7 +29,12 @@ import {
   UnshieldedWallet,
 } from '@midnight-ntwrk/wallet-sdk';
 
-import { NETWORK_CONFIGS, type NetworkConfig, type NetworkId, type FeedbackProviders } from '@feedback/api';
+import {
+  resolveNetworkConfig as resolveConfigWithOverrides,
+  type NetworkConfig,
+  type NetworkId,
+  type FeedbackProviders,
+} from '@feedback/api';
 
 // The wallet SDK syncs over a websocket, which Node does not expose globally.
 (globalThis as { WebSocket?: unknown }).WebSocket = WebSocket;
@@ -39,7 +44,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** Where `compact compile` put the circuit keys and verifier data. */
 export const ZK_CONFIG_PATH = path.resolve(__dirname, '..', '..', 'contract', 'src', 'managed', 'feedback');
 
-export const resolveNetworkConfig = (network: NetworkId): NetworkConfig => NETWORK_CONFIGS[network];
+export const resolveNetworkConfig = (network: NetworkId): NetworkConfig =>
+  resolveConfigWithOverrides(network);
 
 const deriveKeys = (seed: string) => {
   const hdWallet = HDWallet.fromSeed(Buffer.from(seed, 'hex'));
