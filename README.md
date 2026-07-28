@@ -259,8 +259,33 @@ Honest account of what has and hasn't been verified.
 | **`npm run compact`** | ✅ **passes** — compiles all 3 circuits, no errors |
 | **`npm run build`** (contract → api → ui) | ✅ **passes** end to end |
 | `feedback-cli` — `tsc` | ✅ passes |
+| **`npm run simulate`** — contract logic | ✅ **19/19 checks pass** against the compiled circuits |
 | Proof server on `:6300` | ✅ responds `{"status":"ok"}` |
 | Contract deployment | ⚠️ **not run** — needs a faucet-funded wallet |
+
+### Running the contract locally
+
+`npm run simulate` executes the **real circuits emitted by `compact compile`** against an in-memory
+ledger — no wallet, no proof server, no network. Circuit assertions fire exactly as they would on-chain,
+so the rejection cases are meaningful rather than decorative:
+
+```
+PASS  constructor opens round 1 — round=1
+PASS  alice submission recorded — entryCount=1
+PASS  alice cannot submit twice in the same round
+        — rejected: failed assert: This key has already submitted feedback in the current round
+PASS  bob can still submit — entryCount=2
+PASS  non-organizer cannot close the round
+        — rejected: failed assert: Only the organizer may close the round
+PASS  closed round accepts no feedback — rejected: failed assert: Feedback round is closed
+PASS  nullifiers were retired — submitted=0
+PASS  alice may submit again in a new round — entryCount=3
+
+19 passed, 0 failed
+```
+
+This is the fastest way to verify the privacy model end to end: the same key is refused twice inside one
+round, yet accepted again once a new round retires the nullifier set.
 
 ### Verified toolchain
 
